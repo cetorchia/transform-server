@@ -1,0 +1,12 @@
+{application, transform,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { transform_app, []}},
+  {env, []}
+ ]}.
