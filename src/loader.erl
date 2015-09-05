@@ -1,15 +1,9 @@
 -module(loader).
 -export([load/2]).
 
-load(InputType, Data) ->
+load(Data) ->
     {ok, Ref} = odbc:connect("DSN=transform", []),
-    DataTypeName = atom_to_list(InputType),
-    {selected, ["data_type_id"], [{DataTypeId}]} = odbc:param_query(
-                                "SELECT t.id AS data_type_id
-                                FROM data_type t
-                                WHERE t.name = ?",
-                                [{{sql_varchar, 32},[DataTypeName]}]),
-    DataTypeIds = [DataTypeId || Datum <- Data],
+    DataTypeIds = [DataTypeId || #{data_type_id := DataTypeId} <- Data],
     GroupKeys = [GroupKey || #{group_key := GroupKey} <- Data],
     GroupValues = [GroupValue || #{group_value := GroupValue} <- Data],
     ItemKeys = [ItemKey || #{item_key := ItemKey} <- Data],
