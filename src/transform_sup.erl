@@ -25,5 +25,9 @@ init([]) ->
                         {transform_server, start_link, []},
                         permanent, 5000, worker,
                         [transform_server]},
-    {ok, {{one_for_one, 5, 10}, [TransformServer]}}.
-
+    WebServer = {web_server,
+                 {web_server, start_link, []},
+                 permanent, 5000, worker,
+                 [web_server]},
+    ChildSpecs = [TransformServer, WebServer],
+    {ok, {{one_for_one, 5, 10}, ChildSpecs}}.
