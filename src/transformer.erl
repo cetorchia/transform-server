@@ -5,7 +5,7 @@ transform(InputType, Data) ->
     DataTypeName = atom_to_list(InputType),
     Matchers = get_matchers(DataTypeName),
     GetMatches = fun ({DataTypeId, Regex, GroupKey, ItemKey}) ->
-                         Matches = get_matches(DataTypeId, Regex, GroupKey, ItemKey, Data),
+                         Matches = get_matches(Regex, Data),
                          attribute_matches(DataTypeId, GroupKey, ItemKey, Matches)
                  end,
     lists:flatmap(GetMatches, Matchers).
