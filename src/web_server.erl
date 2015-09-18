@@ -1,5 +1,5 @@
 -module(web_server).
--export([start_link/0, start_link/1]).
+-export([start_link/0, start_link/1, loop/1]).
 
 %% Maintenance API
 start_link() ->
