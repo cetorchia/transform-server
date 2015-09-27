@@ -5,8 +5,7 @@
   {registered, []},
   {applications, [
                   kernel,
-                  stdlib,
-                  odbc
+                  stdlib
                  ]},
   {mod, { transform_app, []}},
   {env, []}
