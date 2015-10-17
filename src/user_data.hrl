@@ -1,0 +1,1 @@
+-record(user_data, {id, data_type_id, key, user_id, updated, data}).

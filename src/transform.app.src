@@ -3,10 +3,10 @@
   {description, ""},
   {vsn, "1"},
   {registered, []},
-  {applications, [
-                  kernel,
-                  stdlib
+  {applications, [kernel,
+                  stdlib,
+                  mnesia
                  ]},
-  {mod, { transform_app, []}},
+  {mod, {transform_app, []}},
   {env, []}
  ]}.

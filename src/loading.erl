@@ -1,9 +1,11 @@
--module(loader).
--export([load/1]).
+-module(loading).
+-export([load/2]).
 
-load(Data) ->
+-include("user_data.hrl").
+
+load(DataTypeId, Data) ->
     {ok, Ref} = odbc:connect("DSN=transform", []),
-    DataTypeIds = [DataTypeId || #{data_type_id := DataTypeId} <- Data],
+    DataTypeIds = [DataTypeId || _ <- Data],
     GroupKeys = [GroupKey || #{group_key := GroupKey} <- Data],
     GroupValues = [GroupValue || #{group_value := GroupValue} <- Data],
     ItemKeys = [ItemKey || #{item_key := ItemKey} <- Data],

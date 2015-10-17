@@ -1,6 +1,6 @@
--module(transform_server).
+-module(loading_server).
 -export([start_link/0, start_link/1, stop/0]).
--export([transform/2]).
+-export([load/2]).
 -export([init/1, handle_cast/2]).
 -behaviour(gen_server).
 
@@ -17,17 +17,16 @@ stop() ->
     gen_server:cast(?MODULE, stop).
 
 %% Client API
-transform(InputType, Data) ->
-    gen_server:cast(?MODULE, {transform, InputType, Data}).
+load(DataTypeId, Data) ->
+    gen_server:cast(?MODULE, {load, DataTypeId, Data}).
 
 %% Callback functions
-
 init(Argument) ->
     {ok, null}.
 
 handle_cast(stop, LoopData) ->
     {stop, normal, LoopData};
 
-handle_cast({transform, InputType, Data}, LoopData) ->
-    loader:load(InputType, transformer:transform(InputType, Data)),
+handle_cast({load, DataTypeId, Data}, LoopData) ->
+    loading:load(DataTypeId, Data),
     {noreply, LoopData}.

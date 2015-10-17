@@ -1,4 +1,3 @@
-
 -module(transform_sup).
 
 -behaviour(supervisor).
@@ -21,13 +20,17 @@ start_link() ->
 %% ===================================================================
 
 init([]) ->
-    TransformServer = {transform_server,
-                        {transform_server, start_link, []},
+    TransformationServer = {transformation_server,
+                        {transformation_server, start_link, []},
                         permanent, 5000, worker,
-                        [transform_server]},
+                        [transformation_server]},
+    LoadingServer = {loading_server,
+                  {loading_server, start_link, []},
+                  permanent, 5000, worker,
+                  [loading_server]},
     WebServer = {web_server,
                  {web_server, start_link, []},
                  permanent, 5000, worker,
                  [web_server]},
-    ChildSpecs = [TransformServer, WebServer],
+    ChildSpecs = [TransformationServer, LoadingServer, WebServer],
     {ok, {{one_for_one, 5, 10}, ChildSpecs}}.
