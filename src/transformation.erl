@@ -2,27 +2,43 @@
 -export([transform/2]).
 
 -include("data_type.hrl").
+-include("data_record.hrl").
 
-transform(DataTypeId, Data) ->
+transform(DataTypeId, InputData) ->
     Matchers = data_type:get_matchers(DataTypeId),
-    GetMatches = fun (Matcher) -> get_matches(Matcher, Data) end,
-    lists:flatmap(GetMatches, Matchers).
+    DataRecords = transform_with_matchers(Matchers, InputData),
+    DataRecords.
 
-attribute_match(MatchSpecs, MatchValues) ->
+transform_with_matchers([Matcher|RestOfMatchers], InputData) ->
+    #data_matcher{regex = Regex,
+                  key_match_spec = KeyMatchSpec,
+                  value_match_specs = ValueMatchSpecs} = Matcher,
+    DataRecords = case re:run(InputData, Regex, [global, {capture, all, list}]) of
+                      {match, Matches} ->
+                          attribute_matches(KeyMatchSpec, ValueMatchSpecs, Matches);
+                      nomatch ->
+                          []
+                  end,
+    DataRecords ++ transform_with_matchers(RestOfMatchers, InputData);
+
+transform_with_matchers([], _) ->
+    [].
+
+attribute_matches(KeyMatchSpec, ValueMatchSpecs, [MatchValues|RestOfMatches]) ->
+    MatchSpecs = [KeyMatchSpec | ValueMatchSpecs],
     NumberedValues = maps:from_list(lists:zip(lists:seq(0, length(MatchValues) - 1), MatchValues)),
+    #data_match_spec{group_name = KeyName} = KeyMatchSpec,
+    #data_match_spec{group_name = KeyGroupNumber} = KeyMatchSpec,
+    KeyValue = maps:get(KeyGroupNumber, NumberedValues),
     GetNameValuePair = fun (#data_match_spec{group_name = GroupName,
                                              group_number = GroupNumber}) ->
                                {GroupName, maps:get(GroupNumber, NumberedValues)}
                        end,
-    maps:from_list(lists:map(GetNameValuePair, MatchSpecs)).
+    Data = maps:from_list(lists:map(GetNameValuePair, MatchSpecs)),
+    DataRecord = #data_record{key_name = KeyName,
+                              key_value = KeyValue,
+                              data = Data},
+    [DataRecord|attribute_matches(KeyMatchSpec, ValueMatchSpecs, RestOfMatches)];
 
-get_matches(#data_matcher{regex = Regex,
-                          key_match_spec = KeyMatchSpec,
-                          value_match_specs = ValueMatchSpecs}, Data) ->
-    case re:run(Data, Regex, [global, {capture, all, list}]) of
-        {match, Matches} ->
-            MatchSpecs = [KeyMatchSpec | ValueMatchSpecs],
-            [attribute_match(MatchSpecs, MatchValues) || MatchValues <- Matches];
-        nomatch ->
-            []
-    end.
+attribute_matches(_, _, []) ->
+    [].

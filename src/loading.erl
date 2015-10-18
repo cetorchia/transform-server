@@ -1,23 +1,27 @@
 -module(loading).
--export([load/2]).
+-export([load/3]).
 
 -include("user_data.hrl").
+-include("data_record.hrl").
 
-load(DataTypeId, Data) ->
-    {ok, Ref} = odbc:connect("DSN=transform", []),
-    DataTypeIds = [DataTypeId || _ <- Data],
-    GroupKeys = [GroupKey || #{group_key := GroupKey} <- Data],
-    GroupValues = [GroupValue || #{group_value := GroupValue} <- Data],
-    ItemKeys = [ItemKey || #{item_key := ItemKey} <- Data],
-    ItemValues = [ItemValue || #{item_value := ItemValue} <- Data],
-    Length = length(Data),
-    {updated, Length} = odbc:param_query(
-      "INSERT INTO raw_data(data_type_id, group_key, group_value, item_key, item_value)
-      VALUES (?, ?, ?, ?, ?)",
-      [{sql_integer, DataTypeIds},
-       {{sql_varchar, 32}, GroupKeys},
-       {{sql_varchar, 64}, GroupValues},
-       {{sql_varchar, 32}, ItemKeys},
-       {{sql_varchar, 256}, ItemValues}]),
-    odbc:disconnect(Ref),
+load(DataTypeId, UserId, [DataRecord|Rest]) ->
+    #data_record{key_name = KeyName,
+                 key_value = KeyValue,
+                 data = Data} = DataRecord,
+    Key = #user_data_key{key_name = KeyName,
+                         key_value = KeyValue},
+    Id = #user_data_id{data_type_id = DataTypeId,
+                       user_id = UserId,
+                       key = Key},
+    UpdatedDateTime = calendar:universal_time(),
+    Record = #user_data{id = Id,
+                        data_type_id = DataTypeId,
+                        user_id = UserId,
+                        key = Key,
+                        updated = UpdatedDateTime,
+                        data = Data},
+    ok = mnesia:dirty_write(user_data, Record),
+    load(DataTypeId, UserId, Rest);
+
+load(_, _, []) ->
     ok.

@@ -1,1 +1,3 @@
--record(user_data, {id, data_type_id, key, user_id, updated, data}).
+-record(user_data, {id, data_type_id, user_id, key, updated, data}).
+-record(user_data_id, {data_type_id, user_id, key}).
+-record(user_data_key, {key_name, key_value}).
