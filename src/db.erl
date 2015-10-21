@@ -4,7 +4,7 @@
 -include("db.hrl").
 
 create_schema() ->
-    mnesia:create_schema([node()|nodes()]).
+    ok = mnesia:create_schema([node()|nodes()]).
 
 create_tables() ->
     ok = data_type:create_table(),

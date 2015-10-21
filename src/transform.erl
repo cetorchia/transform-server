@@ -1,9 +1,12 @@
 -module(transform).
--export([start/0]).
+-export([start/0,init/0]).
 
 start() ->
-    mnesia:start(),
-    db:create_schema(),
-    db:create_tables(),
-    db:ensure_loaded(),
+    application:start(mnesia),
     application:start(transform).
+
+init() ->
+    db:create_schema(),
+    application:start(mnesia),
+    db:create_tables(),
+    db:ensure_loaded().
