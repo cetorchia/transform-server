@@ -3,10 +3,10 @@
 
 start() ->
     application:start(mnesia),
+    db:ensure_loaded(),
     application:start(transform).
 
 init() ->
     db:create_schema(),
     application:start(mnesia),
-    db:create_tables(),
-    db:ensure_loaded().
+    db:create_tables().
