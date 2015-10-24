@@ -1,0 +1,1 @@
+-record(user_profile, {id, username, password_hash, name}).
