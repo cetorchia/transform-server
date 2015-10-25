@@ -21,7 +21,7 @@ load(DataTypeId, UserId, Data) ->
     gen_server:cast(?MODULE, {load, DataTypeId, UserId, Data}).
 
 %% Callback functions
-init(Argument) ->
+init(_Argument) ->
     {ok, null}.
 
 handle_cast(stop, LoopData) ->

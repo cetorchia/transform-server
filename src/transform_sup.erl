@@ -20,17 +20,17 @@ start_link() ->
 %% ===================================================================
 
 init([]) ->
-    TransformationServer = {transformation_server,
-                        {transformation_server, start_link, []},
-                        permanent, 5000, worker,
-                        [transformation_server]},
+    TransformationSupervisor = {transformation_sup,
+                                {transformation_sup, start_link, []},
+                                permanent, infinity, supervisor,
+                                [transformation_sup]},
     LoadingServer = {loading_server,
-                  {loading_server, start_link, []},
-                  permanent, 5000, worker,
-                  [loading_server]},
+                     {loading_server, start_link, []},
+                     permanent, 5000, worker,
+                     [loading_server]},
     WebServer = {web_server,
                  {web_server, start_link, []},
                  permanent, 5000, worker,
                  [web_server]},
-    ChildSpecs = [TransformationServer, LoadingServer, WebServer],
+    ChildSpecs = [TransformationSupervisor, LoadingServer, WebServer],
     {ok, {{one_for_one, 5, 10}, ChildSpecs}}.
