@@ -29,5 +29,5 @@ handle_cast(stop, LoopData) ->
     {stop, normal, LoopData}.
 
 handle_call({login, Username, Password}, _From, LoopData) ->
-    Result = user_profile:login(Username, Password),
+    Result = login:login(Username, Password),
     {reply, Result, LoopData}.
