@@ -24,12 +24,16 @@ login(Username, Password) ->
     end.
 
 validate_username_password(Username, Password) ->
-    [UserProfile] = mnesia:dirty_index_read(user_profile, Username, #user_profile.username),
-    case UserProfile of
-        #user_profile{password_hash = ExistingHash, password_salt = Salt} ->
-            case bcrypt:hashpw(Password, Salt) of
-                {ok, ExistingHash} ->
-                    {ok, UserProfile};
+    case mnesia:dirty_index_read(user_profile, Username, #user_profile.username) of
+        [UserProfile] ->
+            case UserProfile of
+                #user_profile{password_hash = ExistingHash, password_salt = Salt} ->
+                    case bcrypt:hashpw(Password, Salt) of
+                        {ok, ExistingHash} ->
+                            {ok, UserProfile};
+                        _ ->
+                            error
+                    end;
                 _ ->
                     error
             end;
@@ -48,4 +52,4 @@ to_json(#user_profile{id = Id, username = Username, name = Name, auth_token = Au
     mochijson2:encode({struct, [{id, Id},
                                {username, Username},
                                {name, Name},
-                               {auth_token, AuthToken}]}).
+                               {auth_token, mochiweb_base64url:encode(AuthToken)}]}).
