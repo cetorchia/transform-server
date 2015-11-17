@@ -18,8 +18,8 @@ stop(Pid) ->
 
 %% Client API
 
-login(Pid, Username, Password) ->
-    gen_server:call(Pid, {login, Username, Password}).
+login(Pid, Email, Password) ->
+    gen_server:call(Pid, {login, Email, Password}).
 
 %% Callback functions
 init(_Argument) ->
@@ -28,6 +28,6 @@ init(_Argument) ->
 handle_cast(stop, LoopData) ->
     {stop, normal, LoopData}.
 
-handle_call({login, Username, Password}, _From, LoopData) ->
-    Result = login:login(Username, Password),
+handle_call({login, Email, Password}, _From, LoopData) ->
+    Result = login:login(Email, Password),
     {reply, Result, LoopData}.

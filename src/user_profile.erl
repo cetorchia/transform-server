@@ -9,11 +9,14 @@ create_table() ->
                                        [{type, set},
                                         {disc_copies, [node() | nodes()]},
                                         {attributes, record_info(fields, user_profile)},
-                                        {index, [username]}]),
+                                        {index, [email]}]),
     ok.
 
-to_json(#user_profile{id = Id, username = Username, name = Name, auth_token = AuthToken}) ->
+to_json(#user_profile{id = Id,
+                      name = Name,
+                      email = Email,
+                      auth_token = AuthToken}) ->
     mochijson2:encode({struct, [{id, Id},
-                               {username, Username},
-                               {name, Name},
+                               {name, list_to_binary(Name)},
+                               {email, list_to_binary(Email)},
                                {auth_token, mochiweb_base64url:encode(AuthToken)}]}).

@@ -3,8 +3,8 @@
 
 -include("user_profile.hrl").
 
-login(Username, Password) ->
-    case validate_username_password(Username, Password) of
+login(Email, Password) ->
+    case validate_email_password(Email, Password) of
         {ok, UserProfile} ->
             UserId = UserProfile#user_profile.id,
             {ok, UpdatedUserProfile} = generate_auth_token(UserId),
@@ -13,8 +13,8 @@ login(Username, Password) ->
             error
     end.
 
-validate_username_password(Username, Password) ->
-    case mnesia:dirty_index_read(user_profile, Username, #user_profile.username) of
+validate_email_password(Email, Password) ->
+    case mnesia:dirty_index_read(user_profile, Email, #user_profile.email) of
         [UserProfile] ->
             case UserProfile of
                 #user_profile{password_hash = ExistingHash, password_salt = Salt} ->

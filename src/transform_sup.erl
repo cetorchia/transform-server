@@ -8,6 +8,12 @@
 %% Supervisor callbacks
 -export([init/1]).
 
+-define(WORKER_SUP_SPEC(SupervisorName, WorkerName),
+        {SupervisorName,
+         {worker_sup, start_link, [SupervisorName, WorkerName]},
+         permanent, 5000, supervisor,
+         [worker_sup]}).
+
 %% ===================================================================
 %% API functions
 %% ===================================================================
@@ -20,24 +26,17 @@ start_link() ->
 %% ===================================================================
 
 init([]) ->
-    TransformationSupervisor = {transformation_sup,
-                                {transformation_sup, start_link, []},
-                                permanent, infinity, supervisor,
-                                [transformation_sup]},
-    LoginSupervisor = {login_sup,
-                       {login_sup, start_link, []},
-                       permanent, infinity, supervisor,
-                       [login_sup]},
-    LoadingServer = {loading_server,
-                     {loading_server, start_link, []},
-                     permanent, 5000, worker,
-                     [loading_server]},
+    LoadingSupervisor = ?WORKER_SUP_SPEC(loading_sup, loading_server),
+    TransformationSupervisor = ?WORKER_SUP_SPEC(transformation_sup, transformation_server),
+    LoginSupervisor = ?WORKER_SUP_SPEC(login_sup, login_server),
+    SignupSupervisor = ?WORKER_SUP_SPEC(signup_sup, signup_server),
     WebServer = {web_server,
                  {web_server, start_link, []},
                  permanent, 5000, worker,
                  [web_server]},
-    ChildSpecs = [TransformationSupervisor,
+    ChildSpecs = [LoadingSupervisor,
+                  TransformationSupervisor,
                   LoginSupervisor,
-                  LoadingServer,
+                  SignupSupervisor,
                   WebServer],
     {ok, {{one_for_one, 5, 10}, ChildSpecs}}.

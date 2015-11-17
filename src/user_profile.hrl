@@ -1,1 +1,1 @@
--record(user_profile, {id, username, name, email, password_hash, password_salt, auth_token}).
+-record(user_profile, {id, name, email, password_hash, password_salt, auth_token}).
