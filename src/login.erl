@@ -1,13 +1,12 @@
 -module(login).
--export([login/2]).
+-export([login/1]).
 
 -include("user_profile.hrl").
 
-login(Email, Password) ->
+login(#{email := Email, password := Password}) ->
     case validate_email_password(Email, Password) of
         {ok, UserProfile} ->
-            UserId = UserProfile#user_profile.id,
-            {ok, UpdatedUserProfile} = generate_auth_token(UserId),
+            {ok, UpdatedUserProfile} = generate_auth_token(UserProfile),
             {ok, UpdatedUserProfile};
         error ->
             error
@@ -31,9 +30,8 @@ validate_email_password(Email, Password) ->
             error
     end.
 
-generate_auth_token(UserId) ->
+generate_auth_token(UserProfile) ->
     AuthToken = crypto:rand_bytes(32),
-    [UserProfile] = mnesia:dirty_read(user_profile, UserId),
     UpdatedUserProfile = UserProfile#user_profile{auth_token = AuthToken},
     ok = mnesia:dirty_write(user_profile, UpdatedUserProfile),
     {ok, UpdatedUserProfile}.

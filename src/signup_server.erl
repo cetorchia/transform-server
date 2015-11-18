@@ -16,8 +16,8 @@ stop(Pid) ->
 
 %% Client API
 
-signup(Pid, UserProfile) ->
-    gen_server:call(Pid, {signup, UserProfile}).
+signup(Pid, SignupData) ->
+    gen_server:call(Pid, {signup, SignupData}).
 
 %% Callback functions
 init(_Arguments) ->
@@ -29,6 +29,6 @@ terminate(_Reason, _LoopData) ->
 handle_cast(stop, LoopData) ->
     {stop, normal, LoopData}.
 
-handle_call({signup, UserProfile}, _From, LoopData) ->
-    Result = signup:signup(UserProfile),
+handle_call({signup, SignupData}, _From, LoopData) ->
+    Result = signup:signup(SignupData),
     {reply, Result, LoopData}.

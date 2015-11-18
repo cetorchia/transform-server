@@ -10,9 +10,11 @@ start() ->
     application:start(transform).
 
 create() ->
+    application:start(sasl),
     db:create_schema(),
     application:start(mnesia),
     db:create_tables().
 
 destroy() ->
+    application:start(sasl),
     db:delete_schema().

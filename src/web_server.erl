@@ -34,45 +34,42 @@ get(_, Req) ->
 
 post("signup", Req) ->
     Parameters = Req:parse_post(),
-    Name = proplists:get_value("name", Parameters),
-    Email = proplists:get_value("email", Parameters),
-    Password = proplists:get_value("password", Parameters),
-    case {Name, Email, Password} of
-        {undefined, _, _} ->
+    SignupData = #{name => proplists:get_value("name", Parameters),
+                   email => proplists:get_value("email", Parameters),
+                   password => proplists:get_value("password", Parameters)},
+    case SignupData of
+        #{name := undefined} ->
             Req:respond({400, [?text_plain], "Missing name"});
-        {_, undefined, _} ->
+        #{email := undefined} ->
             Req:respond({400, [?text_plain], "Missing email"});
-        {_, _, undefined} ->
+        #{password := undefined} ->
             Req:respond({400, [?text_plain], "Missing password"});
-        {_, _, _} ->
-            UserProfile = #{name => Name,
-                            email => Email,
-                            password => Password},
+        _ ->
             Result = worker_sup:run(signup_sup,
                                     fun (Pid) ->
-                                            signup_server:signup(Pid, UserProfile)
+                                            signup_server:signup(Pid, SignupData)
                                     end),
             case Result of
-                {ok, NewUserProfile} ->
-                    Req:ok({"application/json", user_profile:to_json(NewUserProfile)});
-                {error, Message} ->
-                    Req:response({403, [?text_plain], Message})
+                ok ->
+                    Req:respond({200, [], []});
+                error ->
+                    Req:respond({403, [], []})
             end
     end;
 
 post("login", Req) ->
     Parameters = Req:parse_post(),
-    Email = proplists:get_value("email", Parameters),
-    Password = proplists:get_value("password", Parameters),
-    case {Email, Password} of
-        {undefined, _} ->
+    LoginData = #{email => proplists:get_value("email", Parameters),
+                  password => proplists:get_value("password", Parameters)},
+    case LoginData of
+        #{email := undefined} ->
             Req:respond({400, [?text_plain], "Missing email"});
-        {_, undefined} ->
+        #{password := undefined} ->
             Req:respond({400, [?text_plain], "Missing password"});
-        {_, _} ->
+        _ ->
             Result = worker_sup:run(login_sup,
                                     fun (Pid) ->
-                                            login_server:login(Pid, Email, Password)
+                                            login_server:login(Pid, LoginData)
                                     end),
             case Result of
                 {ok, UserProfile} ->

@@ -1,3 +1,3 @@
 #!/bin/bash
 cd "$(dirname "$0")"
-erl -pa ebin/ deps/*/bin -s transform create -noshell $@
+erl -pa ebin/ deps/*/ebin -s transform create -noshell $@

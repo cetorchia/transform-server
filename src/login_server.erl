@@ -1,6 +1,6 @@
 -module(login_server).
 -export([start_link/0, start_link/1, stop/1]).
--export([login/3]).
+-export([login/2]).
 -export([init/1, handle_cast/2, handle_call/3]).
 -behaviour(gen_server).
 
@@ -18,8 +18,8 @@ stop(Pid) ->
 
 %% Client API
 
-login(Pid, Email, Password) ->
-    gen_server:call(Pid, {login, Email, Password}).
+login(Pid, LoginData) ->
+    gen_server:call(Pid, {login, LoginData}).
 
 %% Callback functions
 init(_Argument) ->
@@ -28,6 +28,6 @@ init(_Argument) ->
 handle_cast(stop, LoopData) ->
     {stop, normal, LoopData}.
 
-handle_call({login, Email, Password}, _From, LoopData) ->
-    Result = login:login(Email, Password),
+handle_call({login, LoginData}, _From, LoopData) ->
+    Result = login:login(LoginData),
     {reply, Result, LoopData}.
