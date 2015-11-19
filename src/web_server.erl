@@ -29,6 +29,19 @@ loop(Req) ->
             Req:respond({500, [], []})
     end.
 
+get("data-types", Req) ->
+    case authenticate(Req) of
+        {ok, UserProfile} ->
+            UserProfileId = UserProfile#user_profile.id,
+            GetDataTypes = fun (Pid) ->
+                                   data_type_server:get_data_types_by_user(Pid, UserProfileId)
+                           end,
+            {ok, DataTypes} = worker_sup:run(data_type_sup, GetDataTypes),
+            Req:ok({"application/json", data_type:to_json(DataTypes)});
+        error ->
+            Req:respond({401, [], []})
+    end;
+
 get(_, Req) ->
     Req:not_found().
 
