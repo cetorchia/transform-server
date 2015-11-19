@@ -79,5 +79,35 @@ post("login", Req) ->
             end
     end;
 
+post("data-types", Req) ->
+    Parameters = Req:parse_post(),
+    Name = proplists:get_value("name", Parameters),
+    UserProfileId = list_to_integer(proplists:get_value("user_profile_id", Parameters)),
+    AuthToken = proplists:get_value("auth_token", Parameters),
+    case validate_auth_token(UserProfileId, AuthToken) of
+        {ok, _UserProfile} ->
+            DataTypeData = #{name => Name,
+                             user_profile_id => UserProfileId},
+            case DataTypeData of
+                #{name := undefined} ->
+                    Req:respond({400, [?text_plain], "Missing name"});
+                _ ->
+                    Create = fun (Pid) ->
+                                     data_type_server:create_data_type(Pid, DataTypeData)
+                             end,
+                    {ok, DataType} = worker_sup:run(data_type_sup, Create),
+                    Req:ok({"application/json", data_type:to_json(DataType)})
+            end;
+        error ->
+            Req:respond({401, [], []})
+    end;
+
 post(_, Req) ->
     Req:not_found().
+
+validate_auth_token(UserProfileId, EncodedAuthToken) ->
+    AuthToken = mochiweb_base64url:decode(EncodedAuthToken),
+    worker_sup:run(login_sup,
+                   fun (Pid) ->
+                           login_server:validate_auth_token(Pid, UserProfileId, AuthToken)
+                   end).
