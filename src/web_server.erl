@@ -80,14 +80,11 @@ post("login", Req) ->
     end;
 
 post("data-types", Req) ->
-    Parameters = Req:parse_post(),
-    Name = proplists:get_value("name", Parameters),
-    UserProfileId = list_to_integer(proplists:get_value("user_profile_id", Parameters)),
-    AuthToken = proplists:get_value("auth_token", Parameters),
-    case validate_auth_token(UserProfileId, AuthToken) of
-        {ok, _UserProfile} ->
-            DataTypeData = #{name => Name,
-                             user_profile_id => UserProfileId},
+    case authenticate(Req) of
+        {ok, UserProfile} ->
+            Parameters = Req:parse_post(),
+            DataTypeData = #{name => proplists:get_value("name", Parameters),
+                             user_profile_id => UserProfile#user_profile.id},
             case DataTypeData of
                 #{name := undefined} ->
                     Req:respond({400, [?text_plain], "Missing name"});
@@ -105,9 +102,15 @@ post("data-types", Req) ->
 post(_, Req) ->
     Req:not_found().
 
-validate_auth_token(UserProfileId, EncodedAuthToken) ->
-    AuthToken = mochiweb_base64url:decode(EncodedAuthToken),
-    worker_sup:run(login_sup,
-                   fun (Pid) ->
-                           login_server:validate_auth_token(Pid, UserProfileId, AuthToken)
-                   end).
+authenticate(Req) ->
+    EncodedAuthToken = Req:get_header_value("Auth-Token"),
+    case EncodedAuthToken of
+        undefined ->
+            error;
+        _ ->
+            AuthToken = mochiweb_base64url:decode(EncodedAuthToken),
+            worker_sup:run(login_sup,
+                           fun (Pid) ->
+                                   login_server:validate_auth_token(Pid, AuthToken)
+                           end)
+    end.

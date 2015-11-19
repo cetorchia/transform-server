@@ -1,6 +1,6 @@
 -module(login_server).
 -export([start_link/0, start_link/1, stop/1]).
--export([login/2, validate_auth_token/3]).
+-export([login/2, validate_auth_token/2]).
 -export([init/1, handle_cast/2, handle_call/3]).
 -behaviour(gen_server).
 
@@ -21,8 +21,8 @@ stop(Pid) ->
 login(Pid, LoginData) ->
     gen_server:call(Pid, {login, LoginData}).
 
-validate_auth_token(Pid, UserProfileId, AuthToken) ->
-    gen_server:call(Pid, {validate_auth_token, UserProfileId, AuthToken}).
+validate_auth_token(Pid, AuthToken) ->
+    gen_server:call(Pid, {validate_auth_token, AuthToken}).
 
 %% Callback functions
 init(_Argument) ->
@@ -35,6 +35,6 @@ handle_call({login, LoginData}, _From, LoopData) ->
     Result = login:login(LoginData),
     {reply, Result, LoopData};
 
-handle_call({validate_auth_token, UserProfileId, AuthToken}, _From, LoopData) ->
-    Result = login:validate_auth_token(UserProfileId, AuthToken),
+handle_call({validate_auth_token, AuthToken}, _From, LoopData) ->
+    Result = login:validate_auth_token(AuthToken),
     {reply, Result, LoopData}.

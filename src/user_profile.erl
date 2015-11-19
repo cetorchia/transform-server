@@ -9,7 +9,7 @@ create_table() ->
                                        [{type, set},
                                         {disc_copies, [node() | nodes()]},
                                         {attributes, record_info(fields, user_profile)},
-                                        {index, [email]}]),
+                                        {index, [email, auth_token]}]),
     ok.
 
 to_json(#user_profile{id = Id,

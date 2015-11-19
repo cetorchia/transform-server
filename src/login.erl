@@ -1,5 +1,5 @@
 -module(login).
--export([login/1, validate_auth_token/2]).
+-export([login/1, validate_auth_token/1]).
 
 -include("user_profile.hrl").
 
@@ -36,15 +36,10 @@ generate_auth_token(UserProfile) ->
     ok = mnesia:dirty_write(user_profile, UpdatedUserProfile),
     {ok, UpdatedUserProfile}.
 
-validate_auth_token(UserProfileId, AuthToken) ->
-    case mnesia:dirty_read(user_profile, UserProfileId) of
+validate_auth_token(AuthToken) ->
+    case mnesia:dirty_index_read(user_profile, AuthToken, #user_profile.auth_token) of
         [UserProfile] ->
-            case UserProfile#user_profile.auth_token of
-                AuthToken ->
-                    {ok, UserProfile};
-                _ ->
-                    error
-            end;
+            {ok, UserProfile};
         _ ->
             error
     end.
