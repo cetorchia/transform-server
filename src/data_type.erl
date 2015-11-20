@@ -1,6 +1,7 @@
 -module(data_type).
 -export([create_table/0, to_json/1]).
 -export([create_data_type/1, get_data_types_by_user/1, get_matchers/1]).
+-export([get_data_type_by_user/2]).
 
 -include("data_type.hrl").
 
@@ -19,19 +20,19 @@ to_json(DataType) ->
     mochijson2:encode(to_json_struct(DataType)).
 
 to_json_struct_list([DataType|Rest]) ->
-    [to_json_struct(DataType)|to_json_struct_list(Rest)];
+    JsonStruct = {struct, [{id, DataType#data_type.id},
+                           {user_profile_id, DataType#data_type.user_profile_id},
+                           {name, list_to_binary(DataType#data_type.name)}]},
+    [JsonStruct|to_json_struct_list(Rest)];
 
 to_json_struct_list([]) ->
     [].
 
-to_json_struct(#data_type{id = Id,
-                   user_profile_id = UserProfileId,
-                   name = Name,
-                   matchers = Matchers}) ->
-    {struct, [{id, Id},
-              {user_profile_id, UserProfileId},
-              {name, list_to_binary(Name)},
-              {matchers, Matchers}]}.
+to_json_struct(DataType) ->
+    {struct, [{id, DataType#data_type.id},
+              {user_profile_id, DataType#data_type.user_profile_id},
+              {name, list_to_binary(DataType#data_type.name)},
+              {matchers, DataType#data_type.matchers}]}.
 
 create_data_type(#{name := Name,
                    user_profile_id := UserProfileId}) ->
@@ -45,6 +46,14 @@ create_data_type(#{name := Name,
 get_data_types_by_user(UserProfileId) ->
     DataTypes = mnesia:dirty_index_read(data_type, UserProfileId, #data_type.user_profile_id),
     {ok, DataTypes}.
+
+get_data_type_by_user(DataTypeId, UserProfileId) ->
+    case mnesia:dirty_read(data_type, DataTypeId) of
+        [#data_type{user_profile_id = UserProfileId} = DataType] ->
+            {ok, DataType};
+        [] ->
+            not_found
+    end.
 
 get_matchers(DataTypeId) ->
     [DataType] = mnesia:dirty_read(data_type, DataTypeId),
