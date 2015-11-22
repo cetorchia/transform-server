@@ -1,1 +1,0 @@
--define(text_plain, {"Content-Type", "text/plain"}).

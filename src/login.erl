@@ -7,7 +7,7 @@ login(#{email := Email, password := Password}) ->
     case validate_email_password(Email, Password) of
         {ok, UserProfile} ->
             {ok, UpdatedUserProfile} = generate_auth_token(UserProfile),
-            {ok, UpdatedUserProfile};
+            {ok, to_map(UpdatedUserProfile)};
         error ->
             error
     end.
@@ -43,3 +43,12 @@ validate_auth_token(AuthToken) ->
         _ ->
             error
     end.
+
+to_map(#user_profile{id = Id,
+                      name = Name,
+                      email = Email,
+                      auth_token = AuthToken}) ->
+    #{id => Id,
+      name => list_to_binary(Name),
+      email => list_to_binary(Email),
+      auth_token => mochiweb_base64url:encode(AuthToken)}.

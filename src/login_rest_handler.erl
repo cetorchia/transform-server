@@ -2,26 +2,21 @@
 
 -export([post/1]).
 
--include("rest.hrl").
-
-post(Req) ->
-    Parameters = Req:parse_post(),
-    LoginData = #{email => proplists:get_value("email", Parameters),
-                  password => proplists:get_value("password", Parameters)},
+post(#{data := LoginData}) ->
     case LoginData of
-        #{email := undefined} ->
-            Req:respond({400, [?text_plain], "Missing email"});
-        #{password := undefined} ->
-            Req:respond({400, [?text_plain], "Missing password"});
-        _ ->
+        #{email := _, password := _} ->
             Result = worker_sup:run(login_sup,
                                     fun (Pid) ->
                                             login_server:login(Pid, LoginData)
                                     end),
             case Result of
                 {ok, UserProfile} ->
-                    Req:ok({"application/json", user_profile:to_json(UserProfile)});
+                    {ok, json, UserProfile};
                 error ->
-                    Req:respond({401, [], []})
-            end
+                    unauthorized
+            end;
+        #{password := _} ->
+            {bad_request, "Missing email"};
+        #{} ->
+            {bad_request, "Missing password"}
     end.

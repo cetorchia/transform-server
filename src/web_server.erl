@@ -33,13 +33,36 @@ handle_rest(Method, Path, Req) when Method =:= get;
                                     Method =:= post;
                                     Method =:= put;
                                     Method =:= delete ->
-    [Resource|SubResources] = string:tokens(Path, "/"),
-    ModuleName = re:replace(Resource, "-", "_", [global, {return, list}]) ++ "_rest_handler",
-    Module = list_to_atom(ModuleName),
-    try
-        apply(Module, Method, SubResources ++ [Req])
-    catch
-        error:undef ->
-            error_logger:error_msg("~p~n", [{error, undef, erlang:get_stacktrace()}]),
+    % For the sake of reusability, we are normalizing things, e.g. into a map data structure.
+    % We are not, however, tokenizing, e.g. regurgitating the data into a more erlangy form.
+    % That is the job of the reusable rest server.
+    RequestData = #{data => maps:from_list(
+                              case Method of
+                                  get ->
+                                      Req:parse_qs();
+                                  post ->
+                                      Req:parse_post();
+                                  put ->
+                                      Req:parse_post();
+                                  delete ->
+                                      Req:parse_qs()
+                              end),
+                    auth_token => Req:get_header_value("Auth-Token")},
+    Result = worker_sup:run(rest_sup,
+                            fun (Pid) ->
+                                    rest_server:handle(Pid, Method, Path, RequestData)
+                            end),
+    case Result of
+        {ok, ContentType, ResponseData} ->
+            Req:ok({ContentType, ResponseData});
+        ok ->
+            Req:respond({200, [], []});
+        {bad_request, Message} ->
+            Req:respond({400, {"Content-Type", "text/plain"}, Message});
+        unauthorized ->
+            Req:respond({401, [], []});
+        forbidden ->
+            Req:respond({403, [], []});
+        not_found ->
             Req:not_found()
     end.

@@ -31,6 +31,7 @@ init([]) ->
     LoginSupervisor = ?WORKER_SUP_SPEC(login_sup, login_server),
     SignupSupervisor = ?WORKER_SUP_SPEC(signup_sup, signup_server),
     DataTypeSupervisor = ?WORKER_SUP_SPEC(data_type_sup, data_type_server),
+    RestSupervisor = ?WORKER_SUP_SPEC(rest_sup, rest_server),
     WebServer = {web_server,
                  {web_server, start_link, []},
                  permanent, 5000, worker,
@@ -40,5 +41,6 @@ init([]) ->
                   LoginSupervisor,
                   SignupSupervisor,
                   DataTypeSupervisor,
+                  RestSupervisor,
                   WebServer],
     {ok, {{one_for_one, 5, 10}, ChildSpecs}}.
