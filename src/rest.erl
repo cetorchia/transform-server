@@ -14,6 +14,8 @@ handle(Method, Path, RequestData) when ((Method =:= get) or
                                    {ok, UserProfile} ->
                                        UserProfile;
                                    unauthorized ->
+                                       undefined;
+                                   error ->
                                        undefined
                                end,
     NewRequestData = #{data => RequestDataData,
