@@ -36,6 +36,8 @@ get_data_type_by_user(DataTypeId, UserProfileId) ->
     case mnesia:dirty_read(data_type, DataTypeId) of
         [#data_type{user_profile_id = UserProfileId} = DataType] ->
             {ok, to_map(DataType)};
+        [#data_type{user_profile_id = _}] ->
+            forbidden;
         [] ->
             not_found
     end.

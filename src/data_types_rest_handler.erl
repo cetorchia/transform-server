@@ -28,6 +28,8 @@ get(DataTypeIdStr, #{auth_user_profile := UserProfile}) ->
     case worker_sup:run(data_type_sup, GetDataType) of
         {ok, DataType} ->
             {ok, json, DataType};
+        forbidden ->
+            forbidden;
         not_found ->
             not_found
     end.
