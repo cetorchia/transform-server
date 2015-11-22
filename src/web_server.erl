@@ -58,7 +58,7 @@ handle_rest(Method, Path, Req) when Method =:= get;
         ok ->
             Req:respond({200, [], []});
         {bad_request, Message} ->
-            Req:respond({400, {"Content-Type", "text/plain"}, Message});
+            Req:respond({400, [{"Content-Type", "text/plain"}], Message});
         unauthorized ->
             Req:respond({401, [], []});
         forbidden ->
