@@ -39,13 +39,16 @@ post(#{auth_user_profile := undefined}) ->
 
 post(#{data := DataTypeData, auth_user_profile := UserProfile}) ->
     case DataTypeData of
-        #{name := _} ->
-            NewDataTypeData = DataTypeData#{user_profile_id => UserProfile#user_profile.id},
+        #{name := _, matchers := MatchersJSON} ->
+            NewDataTypeData = DataTypeData#{user_profile_id => UserProfile#user_profile.id,
+                                            matchers => rest:from_json(MatchersJSON)},
             Create = fun (Pid) ->
                              data_type_server:create_data_type(Pid, NewDataTypeData)
                      end,
             {ok, DataType} = worker_sup:run(data_type_sup, Create),
             {ok, json, DataType};
+        #{name := _} ->
+            {bad_request, "Missing matchers"};
         #{} ->
             {bad_request, "Missing name"}
     end.
