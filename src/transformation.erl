@@ -28,7 +28,7 @@ attribute_matches(KeyMatchSpec, ValueMatchSpecs, [MatchValues|RestOfMatches]) ->
     MatchSpecs = [KeyMatchSpec | ValueMatchSpecs],
     NumberedValues = maps:from_list(lists:zip(lists:seq(0, length(MatchValues) - 1), MatchValues)),
     #data_match_spec{group_name = KeyName} = KeyMatchSpec,
-    #data_match_spec{group_name = KeyGroupNumber} = KeyMatchSpec,
+    #data_match_spec{group_number = KeyGroupNumber} = KeyMatchSpec,
     KeyValue = maps:get(KeyGroupNumber, NumberedValues),
     GetNameValuePair = fun (#data_match_spec{group_name = GroupName,
                                              group_number = GroupNumber}) ->

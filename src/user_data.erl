@@ -5,8 +5,8 @@
 
 create_table() ->
     {atomic, ok} = mnesia:create_table(user_data,
-                                       [{type, set},
+                                       [{type, bag},
                                         {disc_copies, [node() | nodes()]},
                                         {attributes, record_info(fields, user_data)},
-                                        {index, [data_type_id, user_id, key]}]),
+                                        {index, [data_collection_id, key]}]),
     ok.

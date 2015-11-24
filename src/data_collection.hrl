@@ -1,0 +1,1 @@
+-record(data_collection, {id, name, user_profile_id}).

@@ -1,27 +1,27 @@
 -module(loading).
--export([load/3]).
+-export([load/4]).
 
 -include("user_data.hrl").
 -include("data_record.hrl").
 
-load(DataTypeId, UserId, [DataRecord|Rest]) ->
+load(DataCollectionId, DataTypeId, UserProfileId, [DataRecord|Rest]) ->
     #data_record{key_name = KeyName,
                  key_value = KeyValue,
                  data = Data} = DataRecord,
-    Key = #user_data_key{key_name = KeyName,
+    Id = mnesia:dirty_update_counter(counter, user_data_id, 1),
+    Key = #user_data_key{data_collection_id = DataCollectionId,
+                         key_name = KeyName,
                          key_value = KeyValue},
-    Id = #user_data_id{data_type_id = DataTypeId,
-                       user_id = UserId,
-                       key = Key},
     UpdatedDateTime = calendar:universal_time(),
     Record = #user_data{id = Id,
+                        data_collection_id = DataCollectionId,
                         data_type_id = DataTypeId,
-                        user_id = UserId,
+                        user_profile_id = UserProfileId,
                         key = Key,
                         updated = UpdatedDateTime,
                         data = Data},
     ok = mnesia:dirty_write(user_data, Record),
-    load(DataTypeId, UserId, Rest);
+    load(DataCollectionId, DataTypeId, UserProfileId, Rest);
 
-load(_, _, []) ->
+load(_, _, _, []) ->
     ok.
