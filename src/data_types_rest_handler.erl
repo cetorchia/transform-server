@@ -41,7 +41,7 @@ post(#{data := DataTypeData, auth_user_profile := UserProfile}) ->
     case DataTypeData of
         #{name := _, matchers := MatchersJSON} ->
             NewDataTypeData = DataTypeData#{user_profile_id => UserProfile#user_profile.id,
-                                            matchers => rest:from_json(MatchersJSON)},
+                                            matchers => util:from_json(MatchersJSON)},
             Create = fun (Pid) ->
                              data_type_server:create_data_type(Pid, NewDataTypeData)
                      end,

@@ -23,7 +23,6 @@ create_data_type(DataType) when is_map(DataType) ->
     DataTypeId = mnesia:dirty_update_counter(counter, data_type_id, 1),
     NewDataType = from_map(DataType#{id => DataTypeId}),
     ok = mnesia:dirty_write(NewDataType),
-    error_logger:info_msg("~p~n", [to_map(NewDataType)]),
     {ok, to_map(NewDataType)}.
 
 get_data_types_by_user(UserProfileId) ->
