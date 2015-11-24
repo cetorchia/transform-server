@@ -1,8 +1,11 @@
 -module(data_type).
 -export([create_table/0]).
 -export([get_matchers/1]).
--export([create_data_type/1, get_data_types_by_user/1]).
--export([get_data_type_by_user/2]).
+-export([create_data_type/1]).
+-export([update_data_type/2]).
+-export([get_data_types/1]).
+-export([get_data_type/2]).
+-export([delete_data_type/2]).
 
 -include("data_type.hrl").
 
@@ -19,20 +22,43 @@ get_matchers(DataTypeId) ->
     #data_type{matchers = Matchers} = DataType,
     Matchers.
 
-create_data_type(DataType) when is_map(DataType) ->
+create_data_type(DataType) ->
     DataTypeId = mnesia:dirty_update_counter(counter, data_type_id, 1),
     NewDataType = from_map(DataType#{id => DataTypeId}),
     ok = mnesia:dirty_write(NewDataType),
     {ok, to_map(NewDataType)}.
 
-get_data_types_by_user(UserProfileId) ->
+update_data_type(DataTypeId, #{user_profile_id := UserProfileId} = DataType) ->
+    case mnesia:dirty_read(data_type, DataTypeId) of
+        [#data_type{user_profile_id = UserProfileId}] ->
+            NewDataType = from_map(DataType#{id => DataTypeId}),
+            ok = mnesia:dirty_write(NewDataType),
+            {ok, to_map(NewDataType)};
+        [#data_type{user_profile_id = _}] ->
+            forbidden;
+        [] ->
+            not_found
+    end.
+
+get_data_types(UserProfileId) ->
     DataTypes = mnesia:dirty_index_read(data_type, UserProfileId, #data_type.user_profile_id),
     {ok, to_maps(DataTypes)}.
 
-get_data_type_by_user(DataTypeId, UserProfileId) ->
+get_data_type(DataTypeId, UserProfileId) ->
     case mnesia:dirty_read(data_type, DataTypeId) of
         [#data_type{user_profile_id = UserProfileId} = DataType] ->
             {ok, to_map(DataType)};
+        [#data_type{user_profile_id = _}] ->
+            forbidden;
+        [] ->
+            not_found
+    end.
+
+delete_data_type(DataTypeId, UserProfileId) ->
+    case mnesia:dirty_read(data_type, DataTypeId) of
+        [#data_type{user_profile_id = UserProfileId}] ->
+            ok = mnesia:dirty_delete(data_type, DataTypeId),
+            ok;
         [#data_type{user_profile_id = _}] ->
             forbidden;
         [] ->
