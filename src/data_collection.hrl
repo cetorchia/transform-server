@@ -1,1 +1,1 @@
--record(data_collection, {id, name, user_profile_id}).
+-record(data_collection, {id, user_profile_id, name}).
