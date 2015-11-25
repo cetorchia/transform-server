@@ -1,8 +1,8 @@
 -module(data_collection_server).
 
 -export([start_link/0, stop/1]).
--export([create_data_collection/2]).
--export([update_data_collection/3]).
+-export([create_data_collection/3]).
+-export([update_data_collection/2]).
 -export([get_data_collections/2]).
 -export([get_data_collection/3]).
 -export([init/1, terminate/2, handle_cast/2, handle_call/3]).
@@ -21,11 +21,11 @@ stop(Pid) ->
 
 %% Client API
 
-create_data_collection(Pid, DataCollectionData) ->
-    gen_server:call(Pid, {create_data_collection, DataCollectionData}).
+create_data_collection(Pid, UserProfileId, DataCollectionData) ->
+    gen_server:call(Pid, {create_data_collection, UserProfileId, DataCollectionData}).
 
-update_data_collection(Pid, DataCollectionId, DataCollectionData) ->
-    gen_server:call(Pid, {update_data_collection, DataCollectionId, DataCollectionData}).
+update_data_collection(Pid, DataCollectionData) ->
+    gen_server:cast(Pid, {update_data_collection, DataCollectionData}).
 
 get_data_collections(Pid, UserProfileId) ->
     gen_server:call(Pid, {get_data_collections, UserProfileId}).
@@ -41,14 +41,14 @@ terminate(_Reason, _LoopData) ->
     ok.
 
 handle_cast(stop, LoopData) ->
-    {stop, normal, LoopData}.
+    {stop, normal, LoopData};
 
-handle_call({create_data_collection, DataCollectionData}, _From, LoopData) ->
-    Result = data_collection:create_data_collection(DataCollectionData),
-    {reply, Result, LoopData};
+handle_cast({update_data_collection, DataCollectionData}, LoopData) ->
+    _Result = data_collection:update_data_collection(DataCollectionData),
+    {noreply, LoopData}.
 
-handle_call({update_data_collection, DataCollectionId, DataCollectionData}, _From, LoopData) ->
-    Result = data_collection:update_data_collection(DataCollectionId, DataCollectionData),
+handle_call({create_data_collection, UserProfileId, DataCollectionData}, _From, LoopData) ->
+    Result = data_collection:create_data_collection(UserProfileId, DataCollectionData),
     {reply, Result, LoopData};
 
 handle_call({get_data_collections, UserProfileId}, _From, LoopData) ->

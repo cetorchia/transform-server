@@ -5,11 +5,7 @@
 post(#{data := SignupData}) ->
     case SignupData of
         #{name := _, email := _, password := _} ->
-            Result = worker_sup:run(signup_sup,
-                                    fun (Pid) ->
-                                            signup_server:signup(Pid, SignupData)
-                                    end),
-            case Result of
+            case signup(SignupData) of
                 ok ->
                     ok;
                 error ->
@@ -22,3 +18,9 @@ post(#{data := SignupData}) ->
         #{} ->
             {bad_request, "Missing password"}
     end.
+
+signup(SignupData) ->
+    worker_sup:run(signup_sup,
+                   fun (Pid) ->
+                           signup_server:signup(Pid, SignupData)
+                   end).

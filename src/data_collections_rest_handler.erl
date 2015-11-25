@@ -5,17 +5,15 @@
 -export([get/2]).
 
 -include("user_profile.hrl").
+-include("data_collection.hrl").
 
 get(#{auth_user_profile := undefined}) ->
     unauthorized;
 
 get(#{auth_user_profile := UserProfile}) ->
     UserProfileId = UserProfile#user_profile.id,
-    GetDataCollections = fun (Pid) ->
-                                 data_collection_server:get_data_collections(Pid, UserProfileId)
-                         end,
-    {ok, DataCollections} = worker_sup:run(data_collection_sup, GetDataCollections),
-    {ok, json, DataCollections}.
+    {ok, DataCollections} = get_data_collections(UserProfileId),
+    {ok, json, data_collection:to_maps(DataCollections)}.
 
 get(_, #{auth_user_profile := undefined}) ->
     unauthorized;
@@ -23,13 +21,9 @@ get(_, #{auth_user_profile := undefined}) ->
 get(DataCollectionIdStr, #{auth_user_profile := UserProfile}) ->
     DataCollectionId = list_to_integer(DataCollectionIdStr),
     UserProfileId = UserProfile#user_profile.id,
-    GetDataCollection =
-    fun (Pid) ->
-            data_collection_server:get_data_collection(Pid, DataCollectionId, UserProfileId)
-    end,
-    case worker_sup:run(data_collection_sup, GetDataCollection) of
+    case get_data_collection(DataCollectionId, UserProfileId) of
         {ok, DataCollection} ->
-            {ok, json, DataCollection};
+            {ok, json, data_collection:to_map(DataCollection)};
         forbidden ->
             forbidden;
         not_found ->
@@ -41,13 +35,11 @@ post(#{auth_user_profile := undefined}) ->
 
 post(#{data := DataCollectionData, auth_user_profile := UserProfile}) ->
     case DataCollectionData of
-        #{name := _} ->
-            NewData = DataCollectionData#{user_profile_id => UserProfile#user_profile.id},
-            Create = fun (Pid) ->
-                             data_collection_server:create_data_collection(Pid, NewData)
-                     end,
-            {ok, DataCollection} = worker_sup:run(data_collection_sup, Create),
-            {ok, json, DataCollection};
+        #{name := Name} ->
+            UserProfileId = UserProfile#user_profile.id,
+            NewDataCollection = #data_collection{name = Name},
+            {ok, DataCollection} = create_data_collection(UserProfileId, NewDataCollection),
+            {ok, json, data_collection:to_map(DataCollection)};
         #{} ->
             {bad_request, "Missing name"}
     end.
@@ -57,17 +49,14 @@ put(_, #{auth_user_profile := undefined}) ->
 
 put(DataCollectionIdStr, #{data := DataCollectionData, auth_user_profile := UserProfile}) ->
     case DataCollectionData of
-        #{name := _} ->
+        #{name := Name} ->
             DataCollectionId = list_to_integer(DataCollectionIdStr),
-            NewData = DataCollectionData#{user_profile_id => UserProfile#user_profile.id},
-            Update = fun (Pid) ->
-                             data_collection_server:update_data_collection(Pid,
-                                                                           DataCollectionId,
-                                                                           NewData)
-                     end,
-            case worker_sup:run(data_collection_sup, Update) of
+            UserProfileId = UserProfile#user_profile.id,
+            case get_data_collection(DataCollectionId, UserProfileId) of
                 {ok, DataCollection} ->
-                    {ok, json, DataCollection};
+                    NewDataCollection = DataCollection#data_collection{name = Name},
+                    ok = update_data_collection(NewDataCollection),
+                    ok;
                 forbidden ->
                     forbidden;
                 not_found ->
@@ -76,3 +65,33 @@ put(DataCollectionIdStr, #{data := DataCollectionData, auth_user_profile := User
         #{} ->
             {bad_request, "Missing name"}
     end.
+
+get_data_collections(UserProfileId) ->
+    worker_sup:run(data_collection_sup,
+                   fun (Pid) ->
+                           data_collection_server:get_data_collections(Pid, UserProfileId)
+                   end).
+
+get_data_collection(DataCollectionId, UserProfileId) ->
+    worker_sup:run(data_collection_sup,
+                   fun (Pid) ->
+                           data_collection_server:get_data_collection(
+                             Pid,
+                             DataCollectionId,
+                             UserProfileId)
+                   end).
+
+create_data_collection(UserProfileId, NewDataCollection) ->
+    worker_sup:run(data_collection_sup,
+                   fun (Pid) ->
+                           data_collection_server:create_data_collection(
+                             Pid,
+                             UserProfileId,
+                             NewDataCollection)
+                   end).
+
+update_data_collection(NewDataCollection) ->
+    worker_sup:run(data_collection_sup,
+                   fun (Pid) ->
+                           data_collection_server:update_data_collection(Pid, NewDataCollection)
+                   end).

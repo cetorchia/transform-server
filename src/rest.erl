@@ -21,26 +21,30 @@ handle(Method, Path, RequestData) when ((Method =:= get) or
     NewRequestData = #{data => RequestDataData,
                        auth_user_profile => AuthenticatedUserProfile},
     Arguments = SubResources ++ [NewRequestData],
-    try
-        case apply(Module, Method, Arguments) of
-            {ok, json, ResponseData} ->
-                {ok, "application/json", util:to_json(ResponseData)};
-            {ok, ContentType, ResponseData} ->
-                {ok, ContentType, ResponseData};
-            ok ->
-                ok;
-            {bad_request, Message} ->
-                {bad_request, Message};
-            unauthorized ->
-                unauthorized;
-            forbidden ->
-                forbidden;
-            not_found ->
-                not_found
-        end
-    catch
-        error:undef ->
-            error_logger:error_msg("~p~n", [{error, undef, erlang:get_stacktrace()}]),
+    case code:ensure_loaded(Module) of
+        {module, _} ->
+            case erlang:function_exported(Module, Method, length(Arguments)) of
+                true ->
+                    case apply(Module, Method, Arguments) of
+                        {ok, json, ResponseData} ->
+                            {ok, "application/json", util:to_json(ResponseData)};
+                        {ok, ContentType, ResponseData} ->
+                            {ok, ContentType, ResponseData};
+                        ok ->
+                            ok;
+                        {bad_request, Message} ->
+                            {bad_request, Message};
+                        unauthorized ->
+                            unauthorized;
+                        forbidden ->
+                            forbidden;
+                        not_found ->
+                            not_found
+                    end;
+                false ->
+                    not_found
+            end;
+        {error, _} ->
             not_found
     end.
 
