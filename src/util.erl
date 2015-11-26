@@ -3,6 +3,7 @@
 -export([normalize_map/1]).
 -export([to_atom/1, to_binary/1]).
 -export([to_json/1, from_json/1]).
+-export([format_datetime/1]).
 
 
 normalize_map(Data) when is_map(Data) ->
@@ -71,3 +72,8 @@ from_json_struct([{Key, Value}|Rest]) ->
 
 from_json_struct(Data) ->
     Data.
+
+
+format_datetime({{Year, Month, Day}, {Hours, Minutes, Seconds}}) ->
+    iolist_to_binary(io_lib:format("~4.4.0w-~2.2.0w-~2.2.0wT~2.2.0w:~2.2.0w:~2.2.0w",
+                                   [Year, Month, Day, Hours, Minutes, Seconds])).

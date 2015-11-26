@@ -1,8 +1,10 @@
 -module(data_collections_rest_handler).
 -export([post/1]).
+-export([post/3]).
 -export([put/2]).
 -export([get/1]).
 -export([get/2]).
+-export([get/3]).
 
 -include("user_profile.hrl").
 -include("data_collection.hrl").
@@ -30,6 +32,32 @@ get(DataCollectionIdStr, #{auth_user_profile := UserProfile}) ->
             not_found
     end.
 
+get(_, "data", #{auth_user_profile := undefined}) ->
+    unauthorized;
+
+get(DataCollectionIdStr, "data", #{data := QueryData, auth_user_profile := UserProfile}) ->
+    DataCollectionId = list_to_integer(DataCollectionIdStr),
+    UserProfileId = UserProfile#user_profile.id,
+    case get_data_collection(DataCollectionId, UserProfileId) of
+        {ok, _} ->
+            case QueryData of
+                #{key_name := KeyName, key_value := KeyValue} ->
+                    {ok, UserData} = get_user_data(DataCollectionId, KeyName, KeyValue),
+                    {ok, json, user_data:to_maps(UserData)};
+                #{key_name := _} ->
+                    {bad_request, "Missing key_value"};
+                #{key_value := _} ->
+                    {bad_request, "Missing key_name"};
+                #{} ->
+                    {ok, UserData} = get_user_data(DataCollectionId),
+                    {ok, json, user_data:to_maps(UserData)}
+            end;
+        forbidden ->
+            forbidden;
+        not_found ->
+            not_found
+    end.
+
 post(#{auth_user_profile := undefined}) ->
     unauthorized;
 
@@ -42,6 +70,38 @@ post(#{data := DataCollectionData, auth_user_profile := UserProfile}) ->
             {ok, json, data_collection:to_map(DataCollection)};
         #{} ->
             {bad_request, "Missing name"}
+    end.
+
+post(_, "data", #{auth_user_profile := undefined}) ->
+    unauthorized;
+
+post(DataCollectionIdStr, "data", #{data := Data, auth_user_profile := UserProfile}) ->
+    case Data of
+        #{data_type_id := DataTypeIdStr, data_records := DataRecordsJSON} ->
+            DataCollectionId = list_to_integer(DataCollectionIdStr),
+            DataTypeId = binary_to_integer(DataTypeIdStr),
+            UserProfileId = UserProfile#user_profile.id,
+            DataRecords = data_record:from_maps(util:from_json(DataRecordsJSON)),
+            case get_data_collection(DataCollectionId, UserProfileId) of
+                {ok, _} ->
+                    case get_data_type(DataTypeId, UserProfileId) of
+                        {ok, _} ->
+                            ok = load(DataCollectionId, DataTypeId, UserProfileId, DataRecords),
+                            ok;
+                        forbidden ->
+                            forbidden;
+                        not_found ->
+                            not_found
+                    end;
+                forbidden ->
+                    forbidden;
+                not_found ->
+                    not_found
+            end;
+        #{data_type_id := _} ->
+            {bad_request, "Missing data_records"};
+        #{} ->
+            {bad_request, "Missing data_type_id"}
     end.
 
 put(_, #{auth_user_profile := undefined}) ->
@@ -94,4 +154,32 @@ update_data_collection(NewDataCollection) ->
     worker_sup:run(data_collection_sup,
                    fun (Pid) ->
                            data_collection_server:update_data_collection(Pid, NewDataCollection)
+                   end).
+
+get_data_type(DataTypeId, UserProfileId) ->
+    worker_sup:run(data_type_sup,
+                   fun (Pid) ->
+                           data_type_server:get_data_type(Pid, DataTypeId, UserProfileId)
+                   end).
+
+load(DataCollectionId, DataTypeId, UserProfileId, DataRecords) ->
+    worker_sup:run(loading_sup,
+                   fun (Pid) ->
+                           loading_server:load(Pid,
+                                               DataCollectionId,
+                                               DataTypeId,
+                                               UserProfileId,
+                                               DataRecords)
+                   end).
+
+get_user_data(DataCollectionId) ->
+    worker_sup:run(user_data_sup,
+                   fun (Pid) ->
+                           user_data_server:get_user_data(Pid, DataCollectionId)
+                   end).
+
+get_user_data(DataCollectionId, KeyName, KeyValue) ->
+    worker_sup:run(user_data_sup,
+                   fun (Pid) ->
+                           user_data_server:get_user_data(Pid, DataCollectionId, KeyName, KeyValue)
                    end).

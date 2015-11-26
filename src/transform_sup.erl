@@ -32,6 +32,7 @@ init([]) ->
     SignupSupervisor = ?WORKER_SUP_SPEC(signup_sup, signup_server),
     DataTypeSupervisor = ?WORKER_SUP_SPEC(data_type_sup, data_type_server),
     DataCollectionSupervisor = ?WORKER_SUP_SPEC(data_collection_sup, data_collection_server),
+    UserDataSupervisor = ?WORKER_SUP_SPEC(user_data_sup, user_data_server),
     RestSupervisor = ?WORKER_SUP_SPEC(rest_sup, rest_server),
     WebServer = {web_server,
                  {web_server, start_link, []},
@@ -43,6 +44,7 @@ init([]) ->
                   SignupSupervisor,
                   DataTypeSupervisor,
                   DataCollectionSupervisor,
+                  UserDataSupervisor,
                   RestSupervisor,
                   WebServer],
     {ok, {{one_for_one, 5, 10}, ChildSpecs}}.

@@ -27,3 +27,8 @@ from_json_test() ->
                       d => [[2, 3], #{e => [<<"4">>]}]}],
     Data = util:from_json("[{\"a\":1,\"b\":\"abc\",\"c\":\"def\",\"d\":[[2, 3],{\"e\":[\"4\"]}]}]"),
     ?assertEqual(ExpectedData, Data).
+
+format_datetime_test() ->
+    ExpectedDateTimeString = <<"2015-11-26T15:26:37">>,
+    DateTimeString = util:format_datetime({{2015, 11, 26}, {15, 26, 37}}),
+    ?assertEqual(ExpectedDateTimeString, DateTimeString).
