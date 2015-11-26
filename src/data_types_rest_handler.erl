@@ -1,6 +1,11 @@
 -module(data_types_rest_handler).
 
--export([get/1, get/2, post/1, put/2, delete/2]).
+-export([get/1]).
+-export([get/2]).
+-export([post/1]).
+-export([post/3]).
+-export([put/2]).
+-export([delete/2]).
 
 -include("user_profile.hrl").
 -include("data_type.hrl").
@@ -45,6 +50,25 @@ post(#{data := DataTypeData, auth_user_profile := UserProfile}) ->
         #{} ->
             {bad_request, "Missing name"}
     end.
+
+post(_, "transform", #{auth_user_profile := undefined}) ->
+    unauthorized;
+
+post(DataTypeIdStr, "transform", #{data := #{data := Data}, auth_user_profile := UserProfile}) ->
+    DataTypeId = list_to_integer(DataTypeIdStr),
+    UserProfileId = UserProfile#user_profile.id,
+    case get_data_type(DataTypeId, UserProfileId) of
+        {ok, _} ->
+            {ok, DataRecords} = transform(DataTypeId, Data),
+            {ok, json, data_record:to_maps(DataRecords)};
+        forbidden ->
+            forbidden;
+        not_found ->
+            not_found
+    end;
+
+post(_, "transform", #{data := #{}, auth_user_profile := _}) ->
+    {bad_request, "Missing data"}.
 
 put(_, #{auth_user_profile := undefined}) ->
     unauthorized;
@@ -116,4 +140,10 @@ delete_data_type(DataTypeId) ->
     worker_sup:run(data_type_sup,
                    fun (Pid) ->
                            data_type_server:delete_data_type(Pid, DataTypeId)
+                   end).
+
+transform(DataTypeId, Data) ->
+    worker_sup:run(transformation_sup,
+                   fun (Pid) ->
+                           transformation_server:transform(Pid, DataTypeId, Data)
                    end).

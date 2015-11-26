@@ -7,7 +7,7 @@
 transform(DataTypeId, InputData) ->
     Matchers = data_type:get_matchers(DataTypeId),
     DataRecords = transform_with_matchers(Matchers, InputData),
-    DataRecords.
+    {ok, DataRecords}.
 
 transform_with_matchers([Matcher|RestOfMatchers], InputData) ->
     #data_matcher{regex = Regex,
@@ -29,10 +29,10 @@ attribute_matches(KeyMatchSpec, ValueMatchSpecs, [MatchValues|RestOfMatches]) ->
     NumberedValues = maps:from_list(lists:zip(lists:seq(0, length(MatchValues) - 1), MatchValues)),
     #data_match_spec{group_name = KeyName} = KeyMatchSpec,
     #data_match_spec{group_number = KeyGroupNumber} = KeyMatchSpec,
-    KeyValue = maps:get(KeyGroupNumber, NumberedValues),
+    KeyValue = list_to_binary(maps:get(KeyGroupNumber, NumberedValues)),
     GetNameValuePair = fun (#data_match_spec{group_name = GroupName,
                                              group_number = GroupNumber}) ->
-                               {GroupName, maps:get(GroupNumber, NumberedValues)}
+                               {GroupName, list_to_binary(maps:get(GroupNumber, NumberedValues))}
                        end,
     Data = maps:from_list(lists:map(GetNameValuePair, MatchSpecs)),
     DataRecord = #data_record{key_name = KeyName,
