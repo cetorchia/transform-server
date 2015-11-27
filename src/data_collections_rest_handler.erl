@@ -77,31 +77,31 @@ post(_, "data", #{auth_user_profile := undefined}) ->
 
 post(DataCollectionIdStr, "data", #{data := Data, auth_user_profile := UserProfile}) ->
     case Data of
-        #{data_type_id := DataTypeIdStr, data_records := DataRecordsJSON} ->
+        #{data_records := DataRecordsJSON, merge := Merge} ->
             DataCollectionId = list_to_integer(DataCollectionIdStr),
-            DataTypeId = binary_to_integer(DataTypeIdStr),
             UserProfileId = UserProfile#user_profile.id,
             DataRecords = data_record:from_maps(util:from_json(DataRecordsJSON)),
             case get_data_collection(DataCollectionId, UserProfileId) of
                 {ok, _} ->
-                    case get_data_type(DataTypeId, UserProfileId) of
-                        {ok, _} ->
-                            ok = load(DataCollectionId, DataTypeId, UserProfileId, DataRecords),
+                    case Merge of
+                        <<"true">> ->
+                            ok = merge(DataCollectionId, UserProfileId, DataRecords),
                             ok;
-                        forbidden ->
-                            forbidden;
-                        not_found ->
-                            not_found
+                        <<"false">> ->
+                            ok = load(DataCollectionId, UserProfileId, DataRecords),
+                            ok;
+                        _ ->
+                            {bad_request, "Invalid merge"}
                     end;
                 forbidden ->
                     forbidden;
                 not_found ->
                     not_found
             end;
-        #{data_type_id := _} ->
+        #{merge := _} ->
             {bad_request, "Missing data_records"};
         #{} ->
-            {bad_request, "Missing data_type_id"}
+            {bad_request, "Missing merge"}
     end.
 
 put(_, #{auth_user_profile := undefined}) ->
@@ -156,20 +156,22 @@ update_data_collection(NewDataCollection) ->
                            data_collection_server:update_data_collection(Pid, NewDataCollection)
                    end).
 
-get_data_type(DataTypeId, UserProfileId) ->
-    worker_sup:run(data_type_sup,
-                   fun (Pid) ->
-                           data_type_server:get_data_type(Pid, DataTypeId, UserProfileId)
-                   end).
-
-load(DataCollectionId, DataTypeId, UserProfileId, DataRecords) ->
+load(DataCollectionId, UserProfileId, DataRecords) ->
     worker_sup:run(loading_sup,
                    fun (Pid) ->
                            loading_server:load(Pid,
                                                DataCollectionId,
-                                               DataTypeId,
                                                UserProfileId,
                                                DataRecords)
+                   end).
+
+merge(DataCollectionId, UserProfileId, DataRecords) ->
+    worker_sup:run(loading_sup,
+                   fun (Pid) ->
+                           loading_server:merge(Pid,
+                                                DataCollectionId,
+                                                UserProfileId,
+                                                DataRecords)
                    end).
 
 get_user_data(DataCollectionId) ->
