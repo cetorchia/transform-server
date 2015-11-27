@@ -97,15 +97,6 @@ from_maps([Map|Rest]) when is_map(Map) ->
 from_maps([]) ->
     [].
 
-from_map(#{id := DataTypeId,
-           name := Name,
-           user_profile_id := UserProfileId,
-           matchers := Matchers}) ->
-    #data_type{id = DataTypeId,
-               user_profile_id = UserProfileId,
-               name = Name,
-               matchers = from_maps(Matchers)};
-
 from_map(#{name := Name,
            matchers := Matchers}) ->
     #data_type{name = Name,
