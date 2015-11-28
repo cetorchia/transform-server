@@ -67,8 +67,26 @@ post(DataTypeIdStr, "transform", #{data := #{data := Data}, auth_user_profile :=
             not_found
     end;
 
+post(DataTypeIdStr, "transform", #{data := #{url := URL}, auth_user_profile := UserProfile}) ->
+    DataTypeId = list_to_integer(DataTypeIdStr),
+    UserProfileId = UserProfile#user_profile.id,
+    case get_data_type(DataTypeId, UserProfileId) of
+        {ok, _} ->
+            case httpc:request(binary_to_list(URL)) of
+                {ok, {{"HTTP/1.1", 200, "OK"}, _, Data}} ->
+                    {ok, DataRecords} = transform(DataTypeId, Data),
+                    {ok, json, data_record:to_maps(DataRecords)};
+                _ ->
+                    {ok, json, []}
+            end;
+        forbidden ->
+            forbidden;
+        not_found ->
+            not_found
+    end;
+
 post(_, "transform", #{data := #{}, auth_user_profile := _}) ->
-    {bad_request, "Missing data"}.
+    {bad_request, "Missing data or url"}.
 
 put(_, #{auth_user_profile := undefined}) ->
     unauthorized;

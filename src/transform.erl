@@ -5,6 +5,8 @@ start() ->
     application:start(sasl),
     application:start(crypto),
     application:start(bcrypt),
+    application:start(inets),
+    ssl:start(),
     application:start(mnesia),
     db:ensure_loaded(),
     application:start(transform).
