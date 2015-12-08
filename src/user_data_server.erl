@@ -2,7 +2,7 @@
 
 -export([start_link/0, stop/1]).
 -export([get_user_data/2]).
--export([get_user_data/4]).
+-export([get_user_data/3]).
 -export([init/1, terminate/2, handle_cast/2, handle_call/3]).
 
 -behaviour(gen_server).
@@ -22,8 +22,8 @@ stop(Pid) ->
 get_user_data(Pid, DataCollectionId) when is_integer(DataCollectionId) ->
     gen_server:call(Pid, {get_user_data, DataCollectionId}).
 
-get_user_data(Pid, DataCollectionId, KeyName, KeyValue) ->
-    gen_server:call(Pid, {get_user_data, DataCollectionId, KeyName, KeyValue}).
+get_user_data(Pid, DataCollectionId, Key) ->
+    gen_server:call(Pid, {get_user_data, DataCollectionId, Key}).
 
 %% Callback functions
 init(_Arguments) ->
@@ -40,6 +40,6 @@ handle_call({get_user_data, DataCollectionId}, _From, LoopData)
     Result = user_data:get_user_data(DataCollectionId),
     {reply, Result, LoopData};
 
-handle_call({get_user_data, DataCollectionId, KeyName, KeyValue}, _From, LoopData) ->
-    Result = user_data:get_user_data(DataCollectionId, KeyName, KeyValue),
+handle_call({get_user_data, DataCollectionId, Key}, _From, LoopData) ->
+    Result = user_data:get_user_data(DataCollectionId, Key),
     {reply, Result, LoopData}.

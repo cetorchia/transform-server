@@ -1,7 +1,7 @@
 -module(user_data).
 -export([create_table/0]).
 -export([get_user_data/1]).
--export([get_user_data/3]).
+-export([get_user_data/2]).
 -export([to_maps/1, to_map/1]).
 
 -include("user_data.hrl").
@@ -18,10 +18,8 @@ get_user_data(DataCollectionId) when is_integer(DataCollectionId) ->
     UserData = mnesia:dirty_index_read(user_data, DataCollectionId, #user_data.data_collection_id),
     {ok, UserData}.
 
-get_user_data(DataCollectionId, KeyName, KeyValue) ->
-    UserDataKey = #user_data_key{data_collection_id = DataCollectionId,
-                                 key_name = KeyName,
-                                 key_value = KeyValue},
+get_user_data(DataCollectionId, Key) ->
+    UserDataKey = #user_data_key{data_collection_id = DataCollectionId, key = Key},
     UserData = mnesia:dirty_index_read(user_data, UserDataKey, #user_data.key),
     {ok, UserData}.
 
@@ -34,15 +32,12 @@ to_maps([UserDatum|Rest]) when is_record(UserDatum, user_data) ->
 to_map(#user_data{id = Id,
                   user_profile_id = UserProfileId,
                   data_collection_id = DataCollectionId,
-                  key = #user_data_key{data_collection_id = DataCollectionId,
-                                       key_name = KeyName,
-                                       key_value = KeyValue},
+                  key = #user_data_key{data_collection_id = DataCollectionId, key = Key},
                   updated = Updated,
                   data = Data}) ->
     #{id => Id,
       user_profile_id => UserProfileId,
       data_collection_id => DataCollectionId,
-      key_name => KeyName,
-      key_value => KeyValue,
+      key => Key,
       updated => util:format_datetime(Updated),
       data => Data}.

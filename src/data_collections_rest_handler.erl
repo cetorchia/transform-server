@@ -41,13 +41,9 @@ get(DataCollectionIdStr, "data", #{data := QueryData, auth_user_profile := UserP
     case get_data_collection(DataCollectionId, UserProfileId) of
         {ok, _} ->
             case QueryData of
-                #{key_name := KeyName, key_value := KeyValue} ->
-                    {ok, UserData} = get_user_data(DataCollectionId, KeyName, KeyValue),
+                #{key := Key} ->
+                    {ok, UserData} = get_user_data(DataCollectionId, Key),
                     {ok, json, user_data:to_maps(UserData)};
-                #{key_name := _} ->
-                    {bad_request, "Missing key_value"};
-                #{key_value := _} ->
-                    {bad_request, "Missing key_name"};
                 #{} ->
                     {ok, UserData} = get_user_data(DataCollectionId),
                     {ok, json, user_data:to_maps(UserData)}
@@ -180,8 +176,8 @@ get_user_data(DataCollectionId) ->
                            user_data_server:get_user_data(Pid, DataCollectionId)
                    end).
 
-get_user_data(DataCollectionId, KeyName, KeyValue) ->
+get_user_data(DataCollectionId, Key) ->
     worker_sup:run(user_data_sup,
                    fun (Pid) ->
-                           user_data_server:get_user_data(Pid, DataCollectionId, KeyName, KeyValue)
+                           user_data_server:get_user_data(Pid, DataCollectionId, Key)
                    end).

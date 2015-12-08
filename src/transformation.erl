@@ -27,17 +27,14 @@ transform_with_matchers([], _) ->
 attribute_matches(KeyMatchSpec, ValueMatchSpecs, [MatchValues|RestOfMatches]) ->
     MatchSpecs = [KeyMatchSpec | ValueMatchSpecs],
     NumberedValues = maps:from_list(lists:zip(lists:seq(0, length(MatchValues) - 1), MatchValues)),
-    #data_match_spec{group_name = KeyName} = KeyMatchSpec,
     #data_match_spec{group_number = KeyGroupNumber} = KeyMatchSpec,
-    KeyValue = list_to_binary(maps:get(KeyGroupNumber, NumberedValues)),
+    Key = list_to_binary(maps:get(KeyGroupNumber, NumberedValues)),
     GetNameValuePair = fun (#data_match_spec{group_name = GroupName,
                                              group_number = GroupNumber}) ->
                                {GroupName, list_to_binary(maps:get(GroupNumber, NumberedValues))}
                        end,
     Data = maps:from_list(lists:map(GetNameValuePair, MatchSpecs)),
-    DataRecord = #data_record{key_name = KeyName,
-                              key_value = KeyValue,
-                              data = Data},
+    DataRecord = #data_record{key = Key, data = Data},
     [DataRecord|attribute_matches(KeyMatchSpec, ValueMatchSpecs, RestOfMatches)];
 
 attribute_matches(_, _, []) ->

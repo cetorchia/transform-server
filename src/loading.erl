@@ -6,18 +6,15 @@
 -include("data_record.hrl").
 
 load(DataCollectionId, UserProfileId, [DataRecord|Rest]) ->
-    #data_record{key_name = KeyName,
-                 key_value = KeyValue,
-                 data = Data} = DataRecord,
+    #data_record{key = Key, data = Data} = DataRecord,
     Id = mnesia:dirty_update_counter(counter, user_data_id, 1),
-    Key = #user_data_key{data_collection_id = DataCollectionId,
-                         key_name = KeyName,
-                         key_value = KeyValue},
+    UserDataKey = #user_data_key{data_collection_id = DataCollectionId,
+                                 key = Key},
     UpdatedDateTime = calendar:universal_time(),
     Record = #user_data{id = Id,
                         data_collection_id = DataCollectionId,
                         user_profile_id = UserProfileId,
-                        key = Key,
+                        key = UserDataKey,
                         updated = UpdatedDateTime,
                         data = Data},
     ok = mnesia:dirty_write(user_data, Record),
@@ -27,37 +24,35 @@ load(_, _, []) ->
     ok.
 
 merge(DataCollectionId, UserProfileId, [DataRecord|Rest]) ->
-    #data_record{key_name = KeyName,
-                 key_value = KeyValue,
-                 data = Data} = DataRecord,
-    Key = #user_data_key{data_collection_id = DataCollectionId,
-                         key_name = KeyName,
-                         key_value = KeyValue},
-    UpdatedDateTime = calendar:universal_time(),
-    case mnesia:dirty_index_read(user_data, Key, #user_data.key) of
+    #data_record{key = Key, data = Data} = DataRecord,
+    UserDataKey = #user_data_key{data_collection_id = DataCollectionId,
+                                 key = Key},
+    case mnesia:dirty_index_read(user_data, UserDataKey, #user_data.key) of
         [] ->
             Id = mnesia:dirty_update_counter(counter, user_data_id, 1),
+            UpdatedDateTime = calendar:universal_time(),
             Record = #user_data{id = Id,
                                 data_collection_id = DataCollectionId,
                                 user_profile_id = UserProfileId,
-                                key = Key,
+                                key = UserDataKey,
                                 updated = UpdatedDateTime,
                                 data = Data},
             ok = mnesia:dirty_write(user_data, Record);
         Records when is_list(Records) ->
-            ok = merge_existing(Records, Data, UpdatedDateTime)
+            ok = merge_existing(Records, Data)
     end,
     merge(DataCollectionId, UserProfileId, Rest);
 
 merge(_, _, []) ->
     ok.
 
-merge_existing([Record|Rest], Data, UpdatedDateTime) ->
+merge_existing([Record|Rest], Data) ->
     NewData = maps:merge(Record#user_data.data, Data),
+    UpdatedDateTime = calendar:universal_time(),
     NewRecord = Record#user_data{updated = UpdatedDateTime,
                                  data = NewData},
     ok = mnesia:dirty_write(user_data, NewRecord),
-    merge_existing(Rest, Data, UpdatedDateTime);
+    merge_existing(Rest, Data);
 
-merge_existing([], _, _) ->
+merge_existing([], _) ->
     ok.

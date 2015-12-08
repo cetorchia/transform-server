@@ -1,1 +1,1 @@
--record(data_record, {key_name, key_value, data}).
+-record(data_record, {key, data}).
