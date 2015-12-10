@@ -5,6 +5,7 @@
 -export([get/1]).
 -export([get/2]).
 -export([get/3]).
+-export([get/4]).
 
 -include("user_profile.hrl").
 -include("data_collection.hrl").
@@ -35,19 +36,30 @@ get(DataCollectionIdStr, #{auth_user_profile := UserProfile}) ->
 get(_, "data", #{auth_user_profile := undefined}) ->
     unauthorized;
 
-get(DataCollectionIdStr, "data", #{data := QueryData, auth_user_profile := UserProfile}) ->
+get(DataCollectionIdStr, "data", #{auth_user_profile := UserProfile}) ->
     DataCollectionId = list_to_integer(DataCollectionIdStr),
     UserProfileId = UserProfile#user_profile.id,
     case get_data_collection(DataCollectionId, UserProfileId) of
         {ok, _} ->
-            case QueryData of
-                #{key := Key} ->
-                    {ok, UserData} = get_user_data(DataCollectionId, Key),
-                    {ok, json, user_data:to_maps(UserData)};
-                #{} ->
-                    {ok, UserData} = get_user_data(DataCollectionId),
-                    {ok, json, user_data:to_maps(UserData)}
-            end;
+            {ok, UserData} = get_user_data(DataCollectionId),
+            {ok, json, user_data:to_maps(UserData)};
+        forbidden ->
+            forbidden;
+        not_found ->
+            not_found
+    end.
+
+get(_, "data", _, #{auth_user_profile := undefined}) ->
+    unauthorized;
+
+get(DataCollectionIdStr, "data", KeyStr, #{auth_user_profile := UserProfile}) ->
+    DataCollectionId = list_to_integer(DataCollectionIdStr),
+    Key = list_to_binary(KeyStr),
+    UserProfileId = UserProfile#user_profile.id,
+    case get_data_collection(DataCollectionId, UserProfileId) of
+        {ok, _} ->
+            {ok, UserData} = get_user_data(DataCollectionId, Key),
+            {ok, json, user_data:to_maps(UserData)};
         forbidden ->
             forbidden;
         not_found ->
