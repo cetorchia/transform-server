@@ -38,13 +38,24 @@ post(#{auth_user_profile := undefined}) ->
 
 post(#{data := DataTypeData, auth_user_profile := UserProfile}) ->
     case DataTypeData of
-        #{name := Name, matchers := MatchersJSON} ->
+        #{name := Name, matchers := MatchersJSON, unique := Unique}
+          when Unique == <<"true">>; Unique == <<"false">> ->
             UserProfileId = UserProfile#user_profile.id,
             NewDataType = data_type:from_map(
                             #{name => Name,
-                              matchers => util:from_json(MatchersJSON)}),
+                              matchers => util:from_json(MatchersJSON),
+                              unique => case Unique of
+                                            <<"true">> ->
+                                                true;
+                                            <<"false">> ->
+                                                false
+                                        end}),
             {ok, DataType} = create_data_type(UserProfileId, NewDataType),
             {ok, json, data_type:to_map(DataType)};
+        #{name := _, matchers := _, unique := _} ->
+            {bad_request, "Invalid unique (boolean)"};
+        #{name := _, matchers := _} ->
+            {bad_request, "Missing unique"};
         #{name := _} ->
             {bad_request, "Missing matchers"};
         #{} ->
@@ -93,14 +104,21 @@ put(_, #{auth_user_profile := undefined}) ->
 
 put(DataTypeIdStr, #{data := DataTypeData, auth_user_profile := UserProfile}) ->
     case DataTypeData of
-        #{name := Name, matchers := MatchersJSON} ->
+        #{name := Name, matchers := MatchersJSON, unique := Unique}
+          when Unique == <<"true">>; Unique == <<"false">> ->
             DataTypeId = list_to_integer(DataTypeIdStr),
             UserProfileId = UserProfile#user_profile.id,
             case get_data_type(DataTypeId, UserProfileId) of
                 {ok, DataType} ->
                     NewDataType = DataType#data_type{
                                     name = Name,
-                                    matchers = data_type:from_maps(util:from_json(MatchersJSON))},
+                                    matchers = data_type:from_maps(util:from_json(MatchersJSON)),
+                                    unique = case Unique of
+                                                 <<"true">> ->
+                                                     true;
+                                                 <<"false">> ->
+                                                     false
+                                             end},
                     ok = update_data_type(NewDataType),
                     ok;
                 forbidden ->
@@ -108,6 +126,10 @@ put(DataTypeIdStr, #{data := DataTypeData, auth_user_profile := UserProfile}) ->
                 not_found ->
                     not_found
             end;
+        #{name := _, matchers := _, unique := _} ->
+            {bad_request, "Invalid unique (boolean)"};
+        #{name := _, matchers := _} ->
+            {bad_request, "Missing unique"};
         #{name := _} ->
             {bad_request, "Missing matchers"};
         #{} ->

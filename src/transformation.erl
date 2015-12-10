@@ -5,9 +5,15 @@
 -include("data_record.hrl").
 
 transform(DataTypeId, InputData) ->
-    Matchers = data_type:get_matchers(DataTypeId),
+    [DataType] = mnesia:dirty_read(data_type, DataTypeId),
+    #data_type{matchers = Matchers, unique = Unique} = DataType,
     DataRecords = transform_with_matchers(Matchers, InputData),
-    {ok, DataRecords}.
+    case Unique of
+        true ->
+            {ok, data_record:merge(DataRecords)};
+        false ->
+            {ok, DataRecords}
+    end.
 
 transform_with_matchers([Matcher|RestOfMatchers], InputData) ->
     #data_matcher{regex = Regex,

@@ -59,11 +59,22 @@ post(#{auth_user_profile := undefined}) ->
 
 post(#{data := DataCollectionData, auth_user_profile := UserProfile}) ->
     case DataCollectionData of
-        #{name := Name} ->
+        #{name := Name, unique := Unique}
+          when Unique == <<"true">>; Unique == <<"false">> ->
             UserProfileId = UserProfile#user_profile.id,
-            NewDataCollection = #data_collection{name = Name},
+            NewDataCollection = #data_collection{name = Name,
+                                                 unique = case Unique of
+                                                              <<"true">> ->
+                                                                  true;
+                                                              <<"false">> ->
+                                                                  false
+                                                          end},
             {ok, DataCollection} = create_data_collection(UserProfileId, NewDataCollection),
             {ok, json, data_collection:to_map(DataCollection)};
+        #{name := _, unique := _} ->
+            {bad_request, "Invalid unique (boolean)"};
+        #{name := _} ->
+            {bad_request, "Missing unique"};
         #{} ->
             {bad_request, "Missing name"}
     end.
@@ -73,31 +84,27 @@ post(_, "data", #{auth_user_profile := undefined}) ->
 
 post(DataCollectionIdStr, "data", #{data := Data, auth_user_profile := UserProfile}) ->
     case Data of
-        #{data_records := DataRecordsJSON, merge := Merge} ->
+        #{data_records := DataRecordsJSON} ->
             DataCollectionId = list_to_integer(DataCollectionIdStr),
             UserProfileId = UserProfile#user_profile.id,
             DataRecords = data_record:from_maps(util:from_json(DataRecordsJSON)),
             case get_data_collection(DataCollectionId, UserProfileId) of
-                {ok, _} ->
-                    case Merge of
-                        <<"true">> ->
+                {ok, #data_collection{unique = Unique}} ->
+                    case Unique of
+                        true ->
                             ok = merge(DataCollectionId, UserProfileId, DataRecords),
                             ok;
-                        <<"false">> ->
+                        false ->
                             ok = load(DataCollectionId, UserProfileId, DataRecords),
-                            ok;
-                        _ ->
-                            {bad_request, "Invalid merge"}
+                            ok
                     end;
                 forbidden ->
                     forbidden;
                 not_found ->
                     not_found
             end;
-        #{merge := _} ->
-            {bad_request, "Missing data_records"};
         #{} ->
-            {bad_request, "Missing merge"}
+            {bad_request, "Missing data_records"}
     end.
 
 put(_, #{auth_user_profile := undefined}) ->
@@ -105,12 +112,20 @@ put(_, #{auth_user_profile := undefined}) ->
 
 put(DataCollectionIdStr, #{data := DataCollectionData, auth_user_profile := UserProfile}) ->
     case DataCollectionData of
-        #{name := Name} ->
+        #{name := Name, unique := Unique}
+          when Unique == <<"true">>; Unique == <<"false">> ->
             DataCollectionId = list_to_integer(DataCollectionIdStr),
             UserProfileId = UserProfile#user_profile.id,
             case get_data_collection(DataCollectionId, UserProfileId) of
                 {ok, DataCollection} ->
-                    NewDataCollection = DataCollection#data_collection{name = Name},
+                    NewDataCollection = DataCollection#data_collection{
+                                          name = Name,
+                                          unique = case Unique of
+                                                       <<"true">> ->
+                                                           true;
+                                                       <<"false">> ->
+                                                           false
+                                                   end},
                     ok = update_data_collection(NewDataCollection),
                     ok;
                 forbidden ->
@@ -118,6 +133,10 @@ put(DataCollectionIdStr, #{data := DataCollectionData, auth_user_profile := User
                 not_found ->
                     not_found
             end;
+        #{name := _, unique := _} ->
+            {bad_request, "Invalid unique (boolean)"};
+        #{name := _} ->
+            {bad_request, "Missing unique"};
         #{} ->
             {bad_request, "Missing name"}
     end.

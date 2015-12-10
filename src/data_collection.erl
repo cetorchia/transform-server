@@ -50,7 +50,11 @@ to_maps([]) ->
 to_maps([DataCollection|Rest]) ->
     [to_map(DataCollection)|to_maps(Rest)].
 
-to_map(#data_collection{id = Id, name = Name, user_profile_id = UserProfileId}) ->
+to_map(#data_collection{id = Id,
+                        name = Name,
+                        user_profile_id = UserProfileId,
+                        unique = Unique}) ->
     #{id => Id,
       name => Name,
-      user_profile_id => UserProfileId}.
+      user_profile_id => UserProfileId,
+      unique => Unique}.

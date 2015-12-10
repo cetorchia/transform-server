@@ -1,6 +1,5 @@
 -module(data_type).
 -export([create_table/0]).
--export([get_matchers/1]).
 -export([create_data_type/2]).
 -export([update_data_type/1]).
 -export([get_data_types/1]).
@@ -17,11 +16,6 @@ create_table() ->
                                         {attributes, record_info(fields, data_type)},
                                         {index, [user_profile_id, name]}]),
     ok.
-
-get_matchers(DataTypeId) ->
-    [DataType] = mnesia:dirty_read(data_type, DataTypeId),
-    #data_type{matchers = Matchers} = DataType,
-    Matchers.
 
 create_data_type(UserProfileId, DataType) ->
     DataTypeId = mnesia:dirty_update_counter(counter, data_type_id, 1),
@@ -73,11 +67,13 @@ to_maps([]) ->
 to_map(#data_type{id = Id,
                   user_profile_id = UserProfileId,
                   name = Name,
-                  matchers = Matchers}) ->
+                  matchers = Matchers,
+                  unique = Unique}) ->
     #{id => Id,
       user_profile_id => UserProfileId,
       name => Name,
-      matchers => to_maps(Matchers)};
+      matchers => to_maps(Matchers),
+      unique => Unique};
 
 to_map(#data_matcher{regex = Regex,
                      key_match_spec = KeyMatchSpec,
@@ -98,9 +94,12 @@ from_maps([]) ->
     [].
 
 from_map(#{name := Name,
-           matchers := Matchers}) ->
+           matchers := Matchers,
+           unique := Unique})
+  when is_boolean(Unique) ->
     #data_type{name = Name,
-               matchers = from_maps(Matchers)};
+               matchers = from_maps(Matchers),
+               unique = Unique};
 
 from_map(#{regex := Regex,
            key_match_spec := KeyMatchSpec,
