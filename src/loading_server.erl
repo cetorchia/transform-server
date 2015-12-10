@@ -2,7 +2,7 @@
 -export([start_link/0, start_link/1, stop/0]).
 -export([load/4]).
 -export([merge/4]).
--export([init/1, handle_cast/2]).
+-export([init/1, handle_cast/2, handle_call/3]).
 -behaviour(gen_server).
 
 %% API functions
@@ -19,22 +19,22 @@ stop() ->
 
 %% Client API
 load(Pid, DataCollectionId, UserProfileId, DataRecords) ->
-    gen_server:cast(Pid, {load, DataCollectionId, UserProfileId, DataRecords}).
+    gen_server:call(Pid, {load, DataCollectionId, UserProfileId, DataRecords}).
 
 merge(Pid, DataCollectionId, UserProfileId, DataRecords) ->
-    gen_server:cast(Pid, {merge, DataCollectionId, UserProfileId, DataRecords}).
+    gen_server:call(Pid, {merge, DataCollectionId, UserProfileId, DataRecords}).
 
 %% Callback functions
 init(_Argument) ->
     {ok, null}.
 
 handle_cast(stop, LoopData) ->
-    {stop, normal, LoopData};
+    {stop, normal, LoopData}.
 
-handle_cast({load, DataCollectionId, UserProfileId, DataRecords}, LoopData) ->
-    loading:load(DataCollectionId, UserProfileId, DataRecords),
-    {noreply, LoopData};
+handle_call({load, DataCollectionId, UserProfileId, DataRecords}, _From, LoopData) ->
+    Result = loading:load(DataCollectionId, UserProfileId, DataRecords),
+    {reply, Result, LoopData};
 
-handle_cast({merge, DataCollectionId, UserProfileId, DataRecords}, LoopData) ->
-    loading:merge(DataCollectionId, UserProfileId, DataRecords),
-    {noreply, LoopData}.
+handle_call({merge, DataCollectionId, UserProfileId, DataRecords}, _From, LoopData) ->
+    Result = loading:merge(DataCollectionId, UserProfileId, DataRecords),
+    {reply, Result, LoopData}.
